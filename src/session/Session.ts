@@ -79,6 +79,7 @@ export class Session {
     | ((url: string) => Promise<void>)
     | undefined;
   private webServer: WebServer | undefined;
+  private webListen: Promise<void> | undefined;
   private cols: number;
   private rows: number;
   private ctrlCCount = 0;
@@ -131,26 +132,25 @@ export class Session {
     if (this.webServer) {
       return;
     }
-    try {
-      this.webServer = await startWebServer(this);
-      this.webUrl = this.webServer.url;
-      this.webError = undefined;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.webError = `web ui failed: ${message}`;
+    if (!this.webListen) {
+      this.webListen = this.listenWebServer();
     }
+    await this.webListen;
   }
 
   async openWebUi(): Promise<void> {
     await this.ensureWebServer();
+    this.notifySoon();
     if (!this.webUrl) {
       return;
     }
     try {
       await (this.openBrowserFn ?? openBrowser)(this.webUrl);
+      this.webError = undefined;
     } catch {
       this.webError = `web ui: ${this.webUrl}`;
     }
+    this.notifySoon();
   }
 
   getWebSnapshot(): WebSnapshot {
@@ -352,10 +352,26 @@ export class Session {
       this.logs.appendRaw(leftover);
     }
     await this.process.terminate();
+    if (this.webListen) {
+      await this.webListen;
+    }
     await this.webServer?.close();
     this.webServer = undefined;
     this.webUrl = undefined;
+    this.webListen = undefined;
     this.notifyNow();
+  }
+
+  private async listenWebServer(): Promise<void> {
+    try {
+      this.webServer = await startWebServer(this);
+      this.webUrl = this.webServer.url;
+      this.webError = undefined;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.webError = `web ui failed: ${message}`;
+      this.webListen = undefined;
+    }
   }
 
   private async restart(): Promise<void> {
