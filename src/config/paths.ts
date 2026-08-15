@@ -7,9 +7,9 @@ export function configDir(
 ): string {
   const xdg = env.XDG_CONFIG_HOME;
   if (xdg) {
-    return path.join(xdg, 'mayu');
+    return path.join(xdg, 'wed');
   }
-  return path.join(home, '.config', 'mayu');
+  return path.join(home, '.config', 'wed');
 }
 
 export function configPath(

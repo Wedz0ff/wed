@@ -42,7 +42,7 @@ export function SettingsPanel({
         <Text color={theme.warning}>Could not save: {error}</Text>
       ) : (
         <Text color={theme.muted}>
-          Enter saves to ~/.config/mayu/config.json
+          Enter saves to ~/.config/wed/config.json
         </Text>
       )}
     </Box>
