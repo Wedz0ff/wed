@@ -12,9 +12,15 @@ export interface UiState {
   mode: UiMode;
   themeName: string;
   visibleRowCount: number;
+  settingsIndex: number;
+  settingsOpenedTheme: string;
+  settingsError?: string;
 }
 
-export function createUiState(themeName: string, visibleRowCount: number): UiState {
+export function createUiState(
+  themeName: string,
+  visibleRowCount: number,
+): UiState {
   return {
     follow: true,
     filterQuery: '',
@@ -26,6 +32,8 @@ export function createUiState(themeName: string, visibleRowCount: number): UiSta
     mode: 'normal',
     themeName,
     visibleRowCount,
+    settingsIndex: 0,
+    settingsOpenedTheme: themeName,
   };
 }
 
@@ -40,9 +48,4 @@ export function formatUptime(ms: number): string {
 }
 
 export type DisplayStatus =
-  | 'STARTING'
-  | 'RUNNING'
-  | 'PAUSED'
-  | 'EXITED'
-  | 'FAILED'
-  | 'TERMINATING';
+  'STARTING' | 'RUNNING' | 'PAUSED' | 'EXITED' | 'FAILED' | 'TERMINATING';

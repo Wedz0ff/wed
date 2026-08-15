@@ -1,19 +1,25 @@
 import { render } from 'ink';
+import { App } from './app/App';
+import { SettingsApp } from './app/SettingsApp';
 import { assertNodeVersion } from './cli/nodeVersion';
 import { CliError, parseArgs } from './cli/parseArgs';
-import { App } from './app/App';
+import { loadConfig } from './config/load';
+import { resolveTheme } from './config/resolveTheme';
 import { Session } from './session/Session';
 
 const HELP = `mayu — process runner and log inspector
 
 Usage:
   mayu [--theme=<name>] <command> [args...]
+  mayu settings
 
 Examples:
   mayu pnpm run dev
   mayu --theme=sakura node index.js
+  mayu settings
 
 Themes: cyberpunk (default), sakura, monochrome, gameboy
+Saved in ~/.config/mayu/config.json. --theme overrides for one run.
 
 macOS and Linux only. Requires Node.js 22+.
 `;
@@ -42,10 +48,24 @@ async function main(): Promise<void> {
     return;
   }
 
+  const themeName = resolveTheme({
+    theme: parsed.theme,
+    themeExplicit: parsed.themeExplicit,
+    config: loadConfig(),
+  });
+
+  if (parsed.settings) {
+    render(<SettingsApp initialTheme={themeName} />, {
+      exitOnCtrlC: false,
+      ...alternateScreenOptions(),
+    });
+    return;
+  }
+
   const session = new Session({
     command: parsed.command,
     args: parsed.args,
-    themeName: parsed.theme,
+    themeName,
     cols: process.stdout.columns ?? 80,
     rows: process.stdout.rows ?? 24,
   });

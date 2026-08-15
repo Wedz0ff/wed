@@ -1,9 +1,5 @@
 import type { Action } from '../app/commands';
-import {
-  createUiState,
-  type DisplayStatus,
-  type UiState,
-} from '../app/state';
+import { createUiState, type DisplayStatus, type UiState } from '../app/state';
 import { LineAssembler } from '../logs/LineAssembler';
 import { filterLogs, findMatchIndexes } from '../logs/LogFilter';
 import { LogStore } from '../logs/LogStore';
@@ -11,7 +7,8 @@ import { extractStack, type ExtractedStack } from '../logs/StackTrace';
 import type { LogEntry } from '../logs/types';
 import { ProcessManager } from '../process/ProcessManager';
 import type { ProcessStatus } from '../process/types';
-import { getTheme, type Theme } from '../themes/index';
+import { saveConfig } from '../config/save';
+import { getTheme, listThemes, type Theme } from '../themes/index';
 
 const BATCH_MS = 50;
 const CHROME_ROWS = 9;
@@ -20,6 +17,7 @@ export interface SessionOptions {
   command: string;
   args: string[];
   themeName?: string;
+  configPath?: string;
   cols?: number;
   rows?: number;
   cwd?: string;
@@ -58,6 +56,7 @@ export class Session {
   private readonly command: string;
   private readonly args: string[];
   private readonly cwd: string;
+  private readonly configPath: string | undefined;
   private cols: number;
   private rows: number;
   private ctrlCCount = 0;
@@ -72,6 +71,7 @@ export class Session {
     this.command = options.command;
     this.args = options.args;
     this.cwd = options.cwd ?? process.cwd();
+    this.configPath = options.configPath;
     this.cols = options.cols ?? process.stdout.columns ?? 80;
     this.rows = options.rows ?? process.stdout.rows ?? 24;
     this.logs = new LogStore(options.logCapacity);
@@ -142,10 +142,24 @@ export class Session {
         this.ui.searchIndex = 0;
         this.jumpToSearch(0);
         break;
+      case 'openSettings':
+        this.openSettings();
+        break;
+      case 'confirmSettings':
+        this.confirmSettings();
+        break;
       case 'escape':
+        if (this.ui.mode === 'settings') {
+          this.ui.themeName = this.ui.settingsOpenedTheme;
+          this.ui.settingsError = undefined;
+        }
         this.ui.mode = 'normal';
         break;
       case 'scroll':
+        if (this.ui.mode === 'settings') {
+          this.moveSettingsSelection(action.delta);
+          break;
+        }
         this.ui.follow = false;
         this.moveSelection(action.delta);
         break;
@@ -354,6 +368,38 @@ export class Session {
     this.ui.follow = false;
     this.ui.selectedIndex = target;
     this.ensureVisible();
+  }
+
+  private openSettings(): void {
+    const themes = listThemes();
+    const index = themes.indexOf(this.ui.themeName);
+    this.ui.mode = 'settings';
+    this.ui.settingsIndex = index >= 0 ? index : 0;
+    this.ui.settingsOpenedTheme = this.ui.themeName;
+    this.ui.settingsError = undefined;
+    this.ui.themeName = themes[this.ui.settingsIndex] ?? this.ui.themeName;
+  }
+
+  private confirmSettings(): void {
+    try {
+      saveConfig({ theme: this.ui.themeName }, this.configPath);
+      this.ui.mode = 'normal';
+      this.ui.settingsError = undefined;
+    } catch (error) {
+      this.ui.settingsError =
+        error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  private moveSettingsSelection(delta: number): void {
+    const themes = listThemes();
+    this.ui.settingsIndex = clamp(
+      this.ui.settingsIndex + delta,
+      0,
+      Math.max(0, themes.length - 1),
+    );
+    this.ui.themeName = themes[this.ui.settingsIndex] ?? this.ui.themeName;
+    this.ui.settingsError = undefined;
   }
 
   private openInspector(): void {

@@ -31,9 +31,16 @@ describe('mapKeyToAction', () => {
       type: 'toggleFollow',
     });
     expect(mapKeyToAction('c', key(), 'normal')).toEqual({ type: 'clear' });
-    expect(mapKeyToAction('f', key(), 'normal')).toEqual({ type: 'openFilter' });
-    expect(mapKeyToAction('/', key(), 'normal')).toEqual({ type: 'openSearch' });
+    expect(mapKeyToAction('f', key(), 'normal')).toEqual({
+      type: 'openFilter',
+    });
+    expect(mapKeyToAction('/', key(), 'normal')).toEqual({
+      type: 'openSearch',
+    });
     expect(mapKeyToAction('r', key(), 'normal')).toEqual({ type: 'restart' });
+    expect(mapKeyToAction('s', key(), 'normal')).toEqual({
+      type: 'openSettings',
+    });
     expect(mapKeyToAction('', key({ return: true }), 'normal')).toEqual({
       type: 'inspect',
     });
@@ -81,5 +88,27 @@ describe('mapKeyToAction', () => {
     expect(mapKeyToAction('N', key({ shift: true }), 'search')).toEqual({
       type: 'searchPrev',
     });
+  });
+
+  it('maps settings-mode keys', () => {
+    expect(mapKeyToAction('s', key(), 'normal')).toEqual({
+      type: 'openSettings',
+    });
+    expect(mapKeyToAction('', key({ upArrow: true }), 'settings')).toEqual({
+      type: 'scroll',
+      delta: -1,
+    });
+    expect(mapKeyToAction('', key({ downArrow: true }), 'settings')).toEqual({
+      type: 'scroll',
+      delta: 1,
+    });
+    expect(mapKeyToAction('', key({ return: true }), 'settings')).toEqual({
+      type: 'confirmSettings',
+    });
+    expect(mapKeyToAction('', key({ escape: true }), 'settings')).toEqual({
+      type: 'escape',
+    });
+    expect(mapKeyToAction('q', key(), 'settings')).toEqual({ type: 'quit' });
+    expect(mapKeyToAction('f', key(), 'settings')).toBeNull();
   });
 });

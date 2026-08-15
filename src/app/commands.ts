@@ -1,6 +1,6 @@
 import type { LogLevel } from '../logs/types';
 
-export type UiMode = 'normal' | 'filter' | 'search' | 'inspect';
+export type UiMode = 'normal' | 'filter' | 'search' | 'inspect' | 'settings';
 
 export interface KeyLike {
   upArrow: boolean;
@@ -35,7 +35,9 @@ export type Action =
   | { type: 'input'; text: string }
   | { type: 'backspace' }
   | { type: 'searchNext' }
-  | { type: 'searchPrev' };
+  | { type: 'searchPrev' }
+  | { type: 'openSettings' }
+  | { type: 'confirmSettings' };
 
 const LEVEL_KEYS: Record<string, LogLevel | 'all'> = {
   '1': 'all',
@@ -74,6 +76,15 @@ export function mapKeyToAction(
     return null;
   }
 
+  if (mode === 'settings') {
+    if (key.escape) return { type: 'escape' };
+    if (input === 'q') return { type: 'quit' };
+    if (key.upArrow) return { type: 'scroll', delta: -1 };
+    if (key.downArrow) return { type: 'scroll', delta: 1 };
+    if (key.return) return { type: 'confirmSettings' };
+    return null;
+  }
+
   if (key.escape) return { type: 'escape' };
   if (key.upArrow) return { type: 'scroll', delta: -1 };
   if (key.downArrow) return { type: 'scroll', delta: 1 };
@@ -89,6 +100,7 @@ export function mapKeyToAction(
   if (input === 'f') return { type: 'openFilter' };
   if (input === '/') return { type: 'openSearch' };
   if (input === 'r') return { type: 'restart' };
+  if (input === 's') return { type: 'openSettings' };
 
   const level = LEVEL_KEYS[input];
   if (level) return { type: 'setLevel', level };

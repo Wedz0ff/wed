@@ -1,5 +1,10 @@
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { loadConfig } from '../../src/config/load';
 import { Session } from '../../src/session/Session';
+import { listThemes } from '../../src/themes/index';
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -40,7 +45,9 @@ describe('Session', () => {
 
   it('filters by text and searches within the filtered view', () => {
     const session = new Session({ command: 'node', args: [] });
-    session.ingest('INFO postgres ready\nINFO redis ready\nERROR postgres down\n');
+    session.ingest(
+      'INFO postgres ready\nINFO redis ready\nERROR postgres down\n',
+    );
     session.dispatch({ type: 'openFilter' });
     session.dispatch({ type: 'input', text: 'postgres' });
     session.dispatch({ type: 'escape' });
@@ -50,9 +57,9 @@ describe('Session', () => {
     session.dispatch({ type: 'input', text: 'down' });
     const snap = session.getSnapshot();
     expect(snap.searchMatches).toBe(1);
-    expect(snap.visibleLogs[snap.ui.selectedIndex - snap.ui.scrollOffset]?.message).toContain(
-      'down',
-    );
+    expect(
+      snap.visibleLogs[snap.ui.selectedIndex - snap.ui.scrollOffset]?.message,
+    ).toContain('down');
   });
 
   it('clears logs', () => {
@@ -83,5 +90,70 @@ describe('Session', () => {
     expect(ticks).toBe(0);
     await wait(80);
     expect(ticks).toBe(1);
+  });
+
+  it('opens settings and live-previews the highlighted theme', () => {
+    const session = new Session({
+      command: 'node',
+      args: [],
+      themeName: 'cyberpunk',
+    });
+    session.dispatch({ type: 'openSettings' });
+    expect(session.ui.mode).toBe('settings');
+    expect(session.ui.themeName).toBe('cyberpunk');
+
+    session.dispatch({ type: 'scroll', delta: 1 });
+    const themes = listThemes();
+    expect(session.ui.themeName).toBe(themes[1]);
+    expect(session.getSnapshot().theme.name).toBe(themes[1]);
+  });
+
+  it('reverts the previewed theme when settings is cancelled', () => {
+    const session = new Session({
+      command: 'node',
+      args: [],
+      themeName: 'sakura',
+    });
+    session.dispatch({ type: 'openSettings' });
+    session.dispatch({ type: 'scroll', delta: 1 });
+    expect(session.ui.themeName).not.toBe('sakura');
+    session.dispatch({ type: 'escape' });
+    expect(session.ui.mode).toBe('normal');
+    expect(session.ui.themeName).toBe('sakura');
+  });
+
+  it('persists the selected theme on confirm', () => {
+    const file = path.join(
+      mkdtempSync(path.join(tmpdir(), 'mayu-session-')),
+      'config.json',
+    );
+    const session = new Session({
+      command: 'node',
+      args: [],
+      themeName: 'cyberpunk',
+      configPath: file,
+    });
+    session.dispatch({ type: 'openSettings' });
+    session.dispatch({ type: 'scroll', delta: 1 });
+    const chosen = session.ui.themeName;
+    session.dispatch({ type: 'confirmSettings' });
+    expect(session.ui.mode).toBe('normal');
+    expect(session.ui.themeName).toBe(chosen);
+    expect(loadConfig(file)).toEqual({ theme: chosen });
+    expect(readFileSync(file, 'utf8').endsWith('\n')).toBe(true);
+  });
+
+  it('stays in settings and surfaces an error when persist fails', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'mayu-session-'));
+    const session = new Session({
+      command: 'node',
+      args: [],
+      themeName: 'cyberpunk',
+      configPath: dir,
+    });
+    session.dispatch({ type: 'openSettings' });
+    session.dispatch({ type: 'confirmSettings' });
+    expect(session.ui.mode).toBe('settings');
+    expect(session.ui.settingsError).toBeTruthy();
   });
 });

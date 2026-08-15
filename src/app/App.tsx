@@ -6,7 +6,9 @@ import { ErrorInspector } from '../components/ErrorInspector';
 import { FilterBar } from '../components/FilterBar';
 import { Header } from '../components/Header';
 import { LogViewer } from '../components/LogViewer';
+import { SettingsPanel } from '../components/SettingsPanel';
 import { StatusBar } from '../components/StatusBar';
+import { listThemes } from '../themes/index';
 
 interface AppProps {
   session: Session;
@@ -63,7 +65,11 @@ export function App({ session }: AppProps) {
   const selectedId = selectedEntry?.id;
 
   return (
-    <Box flexDirection="column" width={stdout.columns || 80} height={stdout.rows || 24}>
+    <Box
+      flexDirection="column"
+      width={stdout.columns || 80}
+      height={stdout.rows || 24}
+    >
       <Header
         command={snap.command}
         args={snap.args}
@@ -74,7 +80,14 @@ export function App({ session }: AppProps) {
         theme={snap.theme}
       />
       <FilterBar ui={snap.ui} theme={snap.theme} />
-      {snap.ui.mode === 'inspect' && snap.inspector ? (
+      {snap.ui.mode === 'settings' ? (
+        <SettingsPanel
+          themes={listThemes()}
+          selectedIndex={snap.ui.settingsIndex}
+          theme={snap.theme}
+          error={snap.ui.settingsError}
+        />
+      ) : snap.ui.mode === 'inspect' && snap.inspector ? (
         <ErrorInspector
           stack={snap.inspector}
           command={[snap.command, ...snap.args].join(' ')}
@@ -102,8 +115,8 @@ export function App({ session }: AppProps) {
       {snap.status === 'exited' || snap.status === 'failed' ? (
         <Box paddingX={1}>
           <Text color={snap.theme.muted}>
-            Exit code: {snap.exitCode ?? snap.lastError ?? 'unknown'}  [r]
-            Restart  [q] Quit
+            Exit code: {snap.exitCode ?? snap.lastError ?? 'unknown'} [r]
+            Restart [q] Quit
           </Text>
         </Box>
       ) : null}

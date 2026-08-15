@@ -27,15 +27,17 @@ export function StatusBar({
     >
       <Text color={theme.foreground}>
         {filteredCount}/{totalCount} logs
-        <Text color={theme.error}>  {errorCount} error</Text>
+        <Text color={theme.error}> {errorCount} error</Text>
         {searchMatches > 0 ? (
-          <Text color={theme.primary}>  {searchMatches} match</Text>
+          <Text color={theme.primary}> {searchMatches} match</Text>
         ) : null}
       </Text>
       <Text color={theme.muted}>
         {mode === 'search'
           ? 'n/N next  Esc exit'
-          : '↑↓ scroll  / search  p pause  q quit'}
+          : mode === 'settings'
+            ? '↑↓ preview  Enter save  Esc cancel'
+            : '↑↓ scroll  / search  s settings  p pause  q quit'}
       </Text>
     </Box>
   );
