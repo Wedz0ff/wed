@@ -12,8 +12,8 @@ const pkg = JSON.parse(
 ) as { version: string };
 
 describe('app branding', () => {
-  it('uses Mayu as the display name', () => {
-    expect(APP_NAME).toBe('Mayu');
+  it('uses Wed as the display name', () => {
+    expect(APP_NAME).toBe('Wed');
   });
 
   it('formats the version from package.json', () => {
