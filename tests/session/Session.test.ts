@@ -160,7 +160,7 @@ describe('Session', () => {
 
   it('persists the selected theme on confirm', () => {
     const file = path.join(
-      mkdtempSync(path.join(tmpdir(), 'mayu-session-')),
+      mkdtempSync(path.join(tmpdir(), 'wed-session-')),
       'config.json',
     );
     const session = new Session({
@@ -237,7 +237,7 @@ describe('Session', () => {
   });
 
   it('stays in settings and surfaces an error when persist fails', () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'mayu-session-'));
+    const dir = mkdtempSync(path.join(tmpdir(), 'wed-session-'));
     const session = new Session({
       command: 'node',
       args: [],

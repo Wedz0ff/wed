@@ -7,7 +7,7 @@ import { loadConfig } from '../../src/config/load';
 import { saveConfig } from '../../src/config/save';
 
 function tempDir(): string {
-  return mkdtempSync(path.join(tmpdir(), 'mayu-config-'));
+  return mkdtempSync(path.join(tmpdir(), 'wed-config-'));
 }
 
 describe('saveConfig', () => {

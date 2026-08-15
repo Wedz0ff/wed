@@ -1,10 +1,10 @@
-# Mayu
+# Wed
 
 Terminal-first process runner and log inspector. Wrap any command in a fullscreen TUI to scroll, filter, search, and restart without changing the app you are running.
 
 ```bash
-npm install -g @wedz0ff/mayu
-mayu pnpm run dev
+npm install -g @wedz0ff/wed
+wed pnpm run dev
 ```
 
 Requires **Node.js 22+** on **macOS or Linux**. Windows is not supported in v1.
@@ -12,16 +12,16 @@ Requires **Node.js 22+** on **macOS or Linux**. Windows is not supported in v1.
 ## Usage
 
 ```bash
-mayu pnpm run dev
-mayu node index.js
-mayu --theme=sakura cargo run
-mayu settings
+wed pnpm run dev
+wed node index.js
+wed --theme=sakura cargo run
+wed settings
 ```
 
 If Node is too old:
 
 ```text
-mayu requires Node.js 22 or newer.
+wed requires Node.js 22 or newer.
 Current version: v18.20.8
 ```
 
@@ -30,7 +30,7 @@ Current version: v18.20.8
 | Key                                | Action                                                          |
 | ---------------------------------- | --------------------------------------------------------------- |
 | `q`                                | Quit and terminate the child                                    |
-| `Ctrl+C`                           | First press terminates the child; second press force-exits Mayu |
+| `Ctrl+C`                           | First press terminates the child; second press force-exits Wed  |
 | `p`                                | Pause / resume live log following                               |
 | `c`                                | Copy filtered logs to the clipboard                             |
 | `x`                                | Clear logs                                                      |
@@ -49,12 +49,12 @@ The TUI owns the keyboard. Child stdin is not forwarded.
 
 `cyberpunk` (default), `sakura`, `monochrome`, `gameboy`.
 
-Press `!`, type `settings`, and press Enter while Mayu is running, or run `mayu settings`, to pick a theme. Enter saves it to `~/.config/mayu/config.json` (or `$XDG_CONFIG_HOME/mayu/config.json`). Esc cancels and restores the previous theme.
+Press `!`, type `settings`, and press Enter while Wed is running, or run `wed settings`, to pick a theme. Enter saves it to `~/.config/wed/config.json` (or `$XDG_CONFIG_HOME/wed/config.json`). Esc cancels and restores the previous theme.
 
 `--theme` overrides the saved theme for that run only.
 
 ```bash
-mayu --theme=sakura pnpm run dev
+wed --theme=sakura pnpm run dev
 ```
 
 ## Development

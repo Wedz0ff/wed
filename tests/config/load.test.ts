@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../../src/config/load';
 
 function tempFile(name: string): string {
-  const dir = mkdtempSync(path.join(tmpdir(), 'mayu-config-'));
+  const dir = mkdtempSync(path.join(tmpdir(), 'wed-config-'));
   return path.join(dir, name);
 }
 
@@ -34,7 +34,7 @@ describe('loadConfig', () => {
   });
 
   it('returns an empty config when the path is a directory', () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'mayu-config-'));
+    const dir = mkdtempSync(path.join(tmpdir(), 'wed-config-'));
     mkdirSync(path.join(dir, 'nested'));
     expect(loadConfig(dir)).toEqual({});
   });

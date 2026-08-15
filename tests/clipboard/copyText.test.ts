@@ -61,16 +61,16 @@ describe('clipboardCommands', () => {
 
 describe('copyText', () => {
   it('writes stdin to the first available command', async () => {
-    const file = path.join(mkdtempSync(path.join(tmpdir(), 'mayu-clip-')), 'out');
+    const file = path.join(mkdtempSync(path.join(tmpdir(), 'wed-clip-')), 'out');
     await copyText('hello\n', { commands: [writeStdinScript(file)] });
     expect(readFileSync(file, 'utf8')).toBe('hello\n');
   });
 
   it('skips a missing command and uses the next one', async () => {
-    const file = path.join(mkdtempSync(path.join(tmpdir(), 'mayu-clip-')), 'out');
+    const file = path.join(mkdtempSync(path.join(tmpdir(), 'wed-clip-')), 'out');
     await copyText('next\n', {
       commands: [
-        { command: 'definitely-not-a-mayu-clipboard-tool', args: [] },
+        { command: 'definitely-not-a-wed-clipboard-tool', args: [] },
         writeStdinScript(file),
       ],
     });
