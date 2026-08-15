@@ -39,6 +39,7 @@ Current version: v18.20.8
 | `↑` `↓` `PgUp` `PgDn` `Home` `End` | Scroll                                                          |
 | `1`–`5`                            | Level ALL / DEBUG / INFO / WARN / ERROR                         |
 | `r`                                | Restart the process                                             |
+| `w`                                | Open the companion web UI in the browser (starts it for this run if disabled) |
 | `!` then `settings` + Enter        | Open settings (theme picker)                                    |
 | `Enter`                            | Inspect the selected error                                      |
 | `Esc`                              | Close filter, search, inspector, or settings                    |
@@ -49,13 +50,19 @@ The TUI owns the keyboard. Child stdin is not forwarded.
 
 `cyberpunk` (default), `sakura`, `monochrome`, `gameboy`.
 
-Press `!`, type `settings`, and press Enter while Wed is running, or run `wed settings`, to pick a theme. Enter saves it to `~/.config/wed/config.json` (or `$XDG_CONFIG_HOME/wed/config.json`). Esc cancels and restores the previous theme.
+Press `!`, type `settings`, and press Enter while Wed is running, or run `wed settings`, to pick a theme and toggle **Start web UI** (`webUi` in `~/.config/wed/config.json`, default on). Enter saves to `~/.config/wed/config.json` (or `$XDG_CONFIG_HOME/wed/config.json`). Esc cancels and restores the previous values.
 
 `--theme` overrides the saved theme for that run only.
 
 ```bash
 wed --theme=sakura pnpm run dev
 ```
+
+## Web UI
+
+When **Start web UI** is on (default), Wed listens on `127.0.0.1` with a random free port. Press `w` to open the log viewer. The page follows the active theme, supports follow, filter, level, search, and copy, and does not control the child process.
+
+If the setting is off, Wed does not listen until you press `w` (that run only).
 
 ## Development
 
