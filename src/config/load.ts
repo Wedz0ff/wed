@@ -19,5 +19,16 @@ export function loadRawConfig(
 
 export function loadConfig(filePath: string = configPath()): WedConfig {
   const raw = loadRawConfig(filePath);
-  return typeof raw.theme === 'string' ? { theme: raw.theme } : {};
+  const config: WedConfig = {};
+  if (typeof raw.theme === 'string') {
+    config.theme = raw.theme;
+  }
+  if (typeof raw.webUi === 'boolean') {
+    config.webUi = raw.webUi;
+  }
+  return config;
+}
+
+export function isWebUiEnabled(config: WedConfig): boolean {
+  return config.webUi !== false;
 }

@@ -3,7 +3,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { loadConfig } from '../../src/config/load';
+import { isWebUiEnabled, loadConfig } from '../../src/config/load';
 
 function tempFile(name: string): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'wed-config-'));
@@ -37,5 +37,24 @@ describe('loadConfig', () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'wed-config-'));
     mkdirSync(path.join(dir, 'nested'));
     expect(loadConfig(dir)).toEqual({});
+  });
+
+  it('treats missing webUi as enabled', () => {
+    expect(isWebUiEnabled({})).toBe(true);
+    expect(isWebUiEnabled({ theme: 'sakura' })).toBe(true);
+  });
+
+  it('reads webUi false from JSON', () => {
+    const file = tempFile('config.json');
+    writeFileSync(file, '{ "theme": "sakura", "webUi": false }\n');
+    expect(loadConfig(file)).toEqual({ theme: 'sakura', webUi: false });
+    expect(isWebUiEnabled(loadConfig(file))).toBe(false);
+  });
+
+  it('ignores a non-boolean webUi value', () => {
+    const file = tempFile('config.json');
+    writeFileSync(file, '{ "webUi": "no" }');
+    expect(loadConfig(file)).toEqual({});
+    expect(isWebUiEnabled(loadConfig(file))).toBe(true);
   });
 });

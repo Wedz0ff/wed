@@ -34,4 +34,10 @@ describe('saveConfig', () => {
     saveConfig({ theme: 'monochrome' }, file);
     expect(loadConfig(file)).toEqual({ theme: 'monochrome' });
   });
+
+  it('persists webUi false', () => {
+    const file = path.join(tempDir(), 'config.json');
+    saveConfig({ webUi: false }, file);
+    expect(loadConfig(file)).toEqual({ webUi: false });
+  });
 });
