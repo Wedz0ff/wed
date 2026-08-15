@@ -147,4 +147,19 @@ describe('Session web UI', () => {
     expect(session.webUrl).toBeUndefined();
     expect(session.getSnapshot().webUrl).toBeUndefined();
   });
+
+  it('does not let a throwing subscriber stop later listeners', async () => {
+    const session = new Session({ command: 'node', args: [], webUi: false });
+    sessions.push(session);
+    let second = 0;
+    session.subscribe(() => {
+      throw new Error('dead sse client');
+    });
+    session.subscribe(() => {
+      second += 1;
+    });
+    session.ingest('INFO hello\n');
+    await new Promise((r) => setTimeout(r, 80));
+    expect(second).toBe(1);
+  });
 });

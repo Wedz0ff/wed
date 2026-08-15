@@ -636,8 +636,12 @@ export class Session {
 
   private notifyNow(): void {
     this.dirty = false;
-    for (const listener of this.listeners) {
-      listener();
+    for (const listener of [...this.listeners]) {
+      try {
+        listener();
+      } catch {
+        // A dead SSE client must not take down the TUI.
+      }
     }
   }
 

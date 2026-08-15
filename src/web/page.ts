@@ -181,6 +181,8 @@ mark {
   var searchQuery = '';
   var searchIndex = 0;
   var source = null;
+  var failCount = 0;
+  var MAX_FAILURES = 5;
 
   function $(id) { return document.getElementById(id); }
 
@@ -299,6 +301,19 @@ mark {
     if (entry.id > lastId) lastId = entry.id;
   }
 
+  function applySnapshot(snap) {
+    command = snap.command || '';
+    args = snap.args || [];
+    status = snap.status || status;
+    if (snap.theme) applyTheme(snap.theme);
+    logs = [];
+    seen = {};
+    lastId = 0;
+    var initial = snap.logs || [];
+    for (var i = 0; i < initial.length; i++) addLog(initial[i]);
+    render();
+  }
+
   function connect() {
     if (source) {
       source.onerror = null;
@@ -306,27 +321,44 @@ mark {
     }
     source = new EventSource('/api/events?afterId=' + lastId);
     source.addEventListener('log', function (ev) {
+      failCount = 0;
       addLog(JSON.parse(ev.data));
       render();
     });
     source.addEventListener('status', function (ev) {
+      failCount = 0;
       var data = JSON.parse(ev.data);
       status = data.status;
       render();
     });
     source.addEventListener('cleared', function () {
+      failCount = 0;
       logs = [];
       seen = {};
       lastId = 0;
       render();
     });
     source.addEventListener('theme', function (ev) {
+      failCount = 0;
       applyTheme(JSON.parse(ev.data));
     });
     source.onerror = function () {
-      source.close();
-      source = null;
-      setTimeout(connect, 500);
+      if (source) {
+        source.onerror = null;
+        source.close();
+        source = null;
+      }
+      failCount += 1;
+      if (failCount >= MAX_FAILURES) return;
+      fetch('/api/snapshot').then(function (res) {
+        if (!res.ok) throw new Error('snapshot failed');
+        return res.json();
+      }).then(function (snap) {
+        applySnapshot(snap);
+        setTimeout(connect, 500);
+      }).catch(function () {
+        failCount = MAX_FAILURES;
+      });
     };
   }
 
@@ -376,14 +408,11 @@ mark {
     });
   });
 
-  fetch('/api/snapshot').then(function (res) { return res.json(); }).then(function (snap) {
-    command = snap.command || '';
-    args = snap.args || [];
-    status = snap.status || status;
-    if (snap.theme) applyTheme(snap.theme);
-    var initial = snap.logs || [];
-    for (var i = 0; i < initial.length; i++) addLog(initial[i]);
-    render();
+  fetch('/api/snapshot').then(function (res) {
+    if (!res.ok) throw new Error('snapshot failed');
+    return res.json();
+  }).then(function (snap) {
+    applySnapshot(snap);
     connect();
   });
 })();
