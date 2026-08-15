@@ -5,6 +5,7 @@ interface SettingsPanelProps {
   themes: string[];
   selectedIndex: number;
   theme: Theme;
+  webUi: boolean;
   error?: string;
 }
 
@@ -12,8 +13,10 @@ export function SettingsPanel({
   themes,
   selectedIndex,
   theme,
+  webUi,
   error,
 }: SettingsPanelProps) {
+  const webSelected = selectedIndex === 0;
   return (
     <Box
       flexDirection="column"
@@ -25,8 +28,15 @@ export function SettingsPanel({
       <Text color={theme.primary} bold>
         THEME
       </Text>
+      <Text
+        color={webSelected ? theme.primary : theme.foreground}
+        inverse={webSelected}
+      >
+        {webSelected ? '> ' : '  '}
+        Web UI    {webUi ? 'ON' : 'OFF'}
+      </Text>
       {themes.map((name, index) => {
-        const selected = index === selectedIndex;
+        const selected = index + 1 === selectedIndex;
         return (
           <Text
             key={name}

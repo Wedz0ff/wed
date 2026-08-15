@@ -15,6 +15,8 @@ const none: KeyLike = {
   delete: false,
   home: false,
   end: false,
+  leftArrow: false,
+  rightArrow: false,
 };
 
 function key(partial: Partial<KeyLike> = {}): KeyLike {
@@ -54,6 +56,7 @@ describe('mapKeyToAction', () => {
       type: 'setLevel',
       level: 'error',
     });
+    expect(mapKeyToAction('w', key(), 'normal')).toEqual({ type: 'openWebUi' });
   });
 
   it('maps scrolling keys', () => {
@@ -125,5 +128,17 @@ describe('mapKeyToAction', () => {
     });
     expect(mapKeyToAction('q', key(), 'settings')).toEqual({ type: 'quit' });
     expect(mapKeyToAction('f', key(), 'settings')).toBeNull();
+  });
+
+  it('toggles web UI setting with space and arrows', () => {
+    expect(mapKeyToAction(' ', key(), 'settings')).toEqual({
+      type: 'toggleWebUiSetting',
+    });
+    expect(mapKeyToAction('', key({ leftArrow: true }), 'settings')).toEqual({
+      type: 'toggleWebUiSetting',
+    });
+    expect(mapKeyToAction('', key({ rightArrow: true }), 'settings')).toEqual({
+      type: 'toggleWebUiSetting',
+    });
   });
 });

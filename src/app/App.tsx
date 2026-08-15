@@ -78,6 +78,7 @@ export function App({ session }: AppProps) {
         startedAt={snap.startedAt}
         now={now}
         theme={snap.theme}
+        webUrl={snap.webUrl}
       />
       <FilterBar ui={snap.ui} theme={snap.theme} />
       {snap.ui.mode === 'settings' ? (
@@ -85,6 +86,7 @@ export function App({ session }: AppProps) {
           themes={listThemes()}
           selectedIndex={snap.ui.settingsIndex}
           theme={snap.theme}
+          webUi={snap.ui.settingsWebUi}
           error={snap.ui.settingsError}
         />
       ) : snap.ui.mode === 'inspect' && snap.inspector ? (
@@ -111,6 +113,7 @@ export function App({ session }: AppProps) {
         searchMatches={snap.searchMatches}
         mode={snap.ui.mode}
         copyStatus={snap.ui.copyStatus}
+        webError={snap.webError}
         theme={snap.theme}
       />
       {snap.status === 'exited' || snap.status === 'failed' ? (

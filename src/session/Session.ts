@@ -74,7 +74,7 @@ export class Session {
   private readonly cwd: string;
   private readonly configPath: string | undefined;
   private readonly copyText: (text: string) => Promise<void>;
-  private readonly webUiPref: boolean | undefined;
+  private webUiPref: boolean | undefined;
   private readonly openBrowserFn:
     | ((url: string) => Promise<void>)
     | undefined;
@@ -233,12 +233,16 @@ export class Session {
       case 'openWebUi':
         void this.openWebUi();
         break;
+      case 'toggleWebUiSetting':
+        this.toggleWebUiSetting();
+        break;
       case 'confirmSettings':
         this.confirmSettings();
         break;
       case 'escape':
         if (this.ui.mode === 'settings') {
           this.ui.themeName = this.ui.settingsOpenedTheme;
+          this.ui.settingsWebUi = this.ui.settingsOpenedWebUi;
           this.ui.settingsError = undefined;
         }
         if (this.ui.mode === 'command') {
@@ -524,15 +528,21 @@ export class Session {
     const themes = listThemes();
     const index = themes.indexOf(this.ui.themeName);
     this.ui.mode = 'settings';
-    this.ui.settingsIndex = index >= 0 ? index : 0;
+    this.ui.settingsIndex = (index >= 0 ? index : 0) + 1;
     this.ui.settingsOpenedTheme = this.ui.themeName;
+    this.ui.settingsWebUi = isWebUiEnabled({ webUi: this.webUiPref });
+    this.ui.settingsOpenedWebUi = this.ui.settingsWebUi;
     this.ui.settingsError = undefined;
-    this.ui.themeName = themes[this.ui.settingsIndex] ?? this.ui.themeName;
+    this.ui.themeName = themes[this.ui.settingsIndex - 1] ?? this.ui.themeName;
   }
 
   private confirmSettings(): void {
     try {
-      saveConfig({ theme: this.ui.themeName }, this.configPath);
+      saveConfig(
+        { theme: this.ui.themeName, webUi: this.ui.settingsWebUi },
+        this.configPath,
+      );
+      this.webUiPref = this.ui.settingsWebUi;
       this.ui.mode = 'normal';
       this.ui.settingsError = undefined;
     } catch (error) {
@@ -546,10 +556,18 @@ export class Session {
     this.ui.settingsIndex = clamp(
       this.ui.settingsIndex + delta,
       0,
-      Math.max(0, themes.length - 1),
+      themes.length,
     );
-    this.ui.themeName = themes[this.ui.settingsIndex] ?? this.ui.themeName;
+    if (this.ui.settingsIndex !== 0) {
+      this.ui.themeName = themes[this.ui.settingsIndex - 1] ?? this.ui.themeName;
+    }
     this.ui.settingsError = undefined;
+  }
+
+  private toggleWebUiSetting(): void {
+    if (this.ui.mode === 'settings' && this.ui.settingsIndex === 0) {
+      this.ui.settingsWebUi = !this.ui.settingsWebUi;
+    }
   }
 
   private openInspector(): void {

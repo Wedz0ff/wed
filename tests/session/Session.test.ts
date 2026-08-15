@@ -175,8 +175,32 @@ describe('Session', () => {
     session.dispatch({ type: 'confirmSettings' });
     expect(session.ui.mode).toBe('normal');
     expect(session.ui.themeName).toBe(chosen);
-    expect(loadConfig(file)).toEqual({ theme: chosen });
+    expect(loadConfig(file)).toEqual({ theme: chosen, webUi: true });
     expect(readFileSync(file, 'utf8').endsWith('\n')).toBe(true);
+  });
+
+  it('saves webUi preview with the theme', () => {
+    const file = path.join(
+      mkdtempSync(path.join(tmpdir(), 'wed-session-')),
+      'config.json',
+    );
+    const session = new Session({
+      command: 'node',
+      args: [],
+      themeName: 'cyberpunk',
+      configPath: file,
+      webUi: true,
+    });
+    session.dispatch({ type: 'openSettings' });
+    while (session.ui.settingsIndex > 0) {
+      session.dispatch({ type: 'scroll', delta: -1 });
+    }
+    session.dispatch({ type: 'toggleWebUiSetting' });
+    session.dispatch({ type: 'confirmSettings' });
+    expect(loadConfig(file)).toMatchObject({
+      theme: 'cyberpunk',
+      webUi: false,
+    });
   });
 
   it('copies the filtered view without changing follow or selection', async () => {

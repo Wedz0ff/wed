@@ -21,6 +21,8 @@ export interface KeyLike {
   delete: boolean;
   home: boolean;
   end: boolean;
+  leftArrow: boolean;
+  rightArrow: boolean;
 }
 
 export type Action =
@@ -47,7 +49,8 @@ export type Action =
   | { type: 'confirmSettings' }
   | { type: 'openCommand' }
   | { type: 'submitCommand' }
-  | { type: 'openWebUi' };
+  | { type: 'openWebUi' }
+  | { type: 'toggleWebUiSetting' };
 
 const LEVEL_KEYS: Record<string, LogLevel | 'all'> = {
   '1': 'all',
@@ -96,6 +99,9 @@ export function mapKeyToAction(
     if (key.upArrow) return { type: 'scroll', delta: -1 };
     if (key.downArrow) return { type: 'scroll', delta: 1 };
     if (key.return) return { type: 'confirmSettings' };
+    if (input === ' ' || key.leftArrow || key.rightArrow) {
+      return { type: 'toggleWebUiSetting' };
+    }
     return null;
   }
 
@@ -116,6 +122,7 @@ export function mapKeyToAction(
   if (input === '/') return { type: 'openSearch' };
   if (input === 'r') return { type: 'restart' };
   if (input === '!') return { type: 'openCommand' };
+  if (input === 'w') return { type: 'openWebUi' };
 
   const level = LEVEL_KEYS[input];
   if (level) return { type: 'setLevel', level };

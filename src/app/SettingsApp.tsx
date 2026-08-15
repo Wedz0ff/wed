@@ -1,6 +1,7 @@
 import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import { useState } from 'react';
 import { APP_NAME, formatAppVersion } from './version';
+import { isWebUiEnabled, loadConfig } from '../config/load';
 import { saveConfig } from '../config/save';
 import { SettingsPanel } from '../components/SettingsPanel';
 import { getTheme, listThemes } from '../themes/index';
@@ -14,9 +15,12 @@ export function SettingsApp({ initialTheme }: SettingsAppProps) {
   const { stdout } = useStdout();
   const themes = listThemes();
   const start = themes.indexOf(initialTheme);
-  const [selectedIndex, setSelectedIndex] = useState(start >= 0 ? start : 0);
+  const [selectedIndex, setSelectedIndex] = useState(
+    (start >= 0 ? start : 0) + 1,
+  );
+  const [themeName, setThemeName] = useState(initialTheme);
+  const [webUi, setWebUi] = useState(() => isWebUiEnabled(loadConfig()));
   const [error, setError] = useState<string | undefined>();
-  const themeName = themes[selectedIndex] ?? 'cyberpunk';
   const theme = getTheme(themeName);
 
   useInput((input, key) => {
@@ -25,18 +29,32 @@ export function SettingsApp({ initialTheme }: SettingsAppProps) {
       return;
     }
     if (key.upArrow) {
-      setSelectedIndex((index) => Math.max(0, index - 1));
+      const next = Math.max(0, selectedIndex - 1);
+      setSelectedIndex(next);
+      if (next > 0) {
+        setThemeName(themes[next - 1] ?? initialTheme);
+      }
       setError(undefined);
       return;
     }
     if (key.downArrow) {
-      setSelectedIndex((index) => Math.min(themes.length - 1, index + 1));
+      const next = Math.min(themes.length, selectedIndex + 1);
+      setSelectedIndex(next);
+      if (next > 0) {
+        setThemeName(themes[next - 1] ?? initialTheme);
+      }
       setError(undefined);
+      return;
+    }
+    if (input === ' ' || key.leftArrow || key.rightArrow) {
+      if (selectedIndex === 0) {
+        setWebUi((value) => !value);
+      }
       return;
     }
     if (key.return) {
       try {
-        saveConfig({ theme: themeName });
+        saveConfig({ theme: themeName, webUi });
         exit();
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause));
@@ -62,6 +80,7 @@ export function SettingsApp({ initialTheme }: SettingsAppProps) {
         themes={themes}
         selectedIndex={selectedIndex}
         theme={theme}
+        webUi={webUi}
         error={error}
       />
       <Box paddingX={1}>

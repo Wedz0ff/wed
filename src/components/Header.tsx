@@ -20,6 +20,7 @@ interface HeaderProps {
   startedAt?: number;
   now: number;
   theme: Theme;
+  webUrl?: string;
 }
 
 export function Header({
@@ -30,6 +31,7 @@ export function Header({
   startedAt,
   now,
   theme,
+  webUrl,
 }: HeaderProps) {
   const cmdline = [command, ...args].join(' ');
   const uptime = formatUptime(startedAt ? now - startedAt : 0);
@@ -56,6 +58,7 @@ export function Header({
             {APP_NAME}
           </Text>
           <Text color={theme.muted}> {formatAppVersion()}</Text>
+          {webUrl ? <Text color={theme.muted}>  {webUrl}</Text> : null}
         </Text>
         <Text>
           <Text color={theme.muted}>{mascot} </Text>

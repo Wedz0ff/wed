@@ -14,6 +14,8 @@ export interface UiState {
   visibleRowCount: number;
   settingsIndex: number;
   settingsOpenedTheme: string;
+  settingsWebUi: boolean;
+  settingsOpenedWebUi: boolean;
   settingsError?: string;
   copyStatus?: string;
   commandQuery: string;
@@ -37,6 +39,8 @@ export function createUiState(
     visibleRowCount,
     settingsIndex: 0,
     settingsOpenedTheme: themeName,
+    settingsWebUi: true,
+    settingsOpenedWebUi: true,
     commandQuery: '',
   };
 }
