@@ -3,7 +3,7 @@
 Terminal-first process runner and log inspector. Wrap any command in a fullscreen TUI to scroll, filter, search, and restart without changing the app you are running.
 
 ```bash
-npm install -g mayu-cli
+npm install -g @wedz0ff/mayu
 mayu pnpm run dev
 ```
 

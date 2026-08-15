@@ -1,5 +1,5 @@
 {
-  "name": "mayu-cli",
+  "name": "@wedz0ff/mayu",
   "version": "0.1.0",
   "description": "Terminal-first process runner and log inspector TUI",
   "type": "module",
