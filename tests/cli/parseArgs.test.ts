@@ -49,7 +49,7 @@ describe('parseArgs', () => {
   it('throws a usage error when no command is given', () => {
     expect(() => parseArgs([])).toThrow(CliError);
     expect(() => parseArgs(['--theme=cyberpunk'])).toThrow(
-      /Usage: mayu \[--theme=<name>\] <command> \[args\.\.\.\]/,
+      /Usage: wed \[--theme=<name>\] <command> \[args\.\.\.\]/,
     );
   });
 
@@ -83,5 +83,6 @@ describe('parseArgs', () => {
 
   it('rejects extra arguments after settings', () => {
     expect(() => parseArgs(['settings', 'extra'])).toThrow(CliError);
+    expect(() => parseArgs(['settings', 'extra'])).toThrow('Usage: wed settings');
   });
 });

@@ -7,7 +7,7 @@ export function assertNodeVersion(
   const major = Number.parseInt(version.replace(/^v/, '').split('.')[0] ?? '', 10);
   if (!Number.isFinite(major) || major < minMajor) {
     throw new Error(
-      `mayu requires Node.js ${minMajor} or newer.\nCurrent version: ${version}`,
+      `wed requires Node.js ${minMajor} or newer.\nCurrent version: ${version}`,
     );
   }
 }

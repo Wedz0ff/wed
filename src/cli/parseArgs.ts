@@ -55,7 +55,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
 
   if (rest[0] === 'settings') {
     if (rest.length > 1) {
-      throw new CliError('Usage: mayu settings');
+      throw new CliError('Usage: wed settings');
     }
     return {
       theme,
@@ -68,7 +68,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   }
 
   if (rest.length === 0) {
-    throw new CliError('Usage: mayu [--theme=<name>] <command> [args...]');
+    throw new CliError('Usage: wed [--theme=<name>] <command> [args...]');
   }
 
   return {

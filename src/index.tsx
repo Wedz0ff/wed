@@ -7,19 +7,19 @@ import { loadConfig } from './config/load';
 import { resolveTheme } from './config/resolveTheme';
 import { Session } from './session/Session';
 
-const HELP = `mayu — process runner and log inspector
+const HELP = `wed — process runner and log inspector
 
 Usage:
-  mayu [--theme=<name>] <command> [args...]
-  mayu settings
+  wed [--theme=<name>] <command> [args...]
+  wed settings
 
 Examples:
-  mayu pnpm run dev
-  mayu --theme=sakura node index.js
-  mayu settings
+  wed pnpm run dev
+  wed --theme=sakura node index.js
+  wed settings
 
 Themes: cyberpunk (default), sakura, monochrome, gameboy
-Saved in ~/.config/mayu/config.json. --theme overrides for one run.
+Saved in ~/.config/wed/config.json. --theme overrides for one run.
 
 macOS and Linux only. Requires Node.js 22+.
 `;
@@ -43,7 +43,7 @@ async function main(): Promise<void> {
   }
 
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    console.error('mayu requires an interactive TTY.');
+    console.error('wed requires an interactive TTY.');
     process.exitCode = 1;
     return;
   }

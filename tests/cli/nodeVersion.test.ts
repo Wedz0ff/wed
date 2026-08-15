@@ -7,9 +7,9 @@ describe('assertNodeVersion', () => {
     expect(() => assertNodeVersion('v24.19.0')).not.toThrow();
   });
 
-  it('rejects older Node versions with the PRD message', () => {
+  it('rejects older Node versions with a clear message', () => {
     expect(() => assertNodeVersion('v18.20.8')).toThrow(
-      'mayu requires Node.js 22 or newer.\nCurrent version: v18.20.8',
+      'wed requires Node.js 22 or newer.\nCurrent version: v18.20.8',
     );
   });
 });
