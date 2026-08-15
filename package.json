@@ -1,6 +1,6 @@
 {
   "name": "@wedz0ff/wed",
-  "version": "0.1.1b",
+  "version": "0.1.2",
   "description": "Terminal-first process runner and log inspector TUI",
   "type": "module",
   "bin": {
