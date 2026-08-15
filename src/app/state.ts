@@ -15,6 +15,9 @@ export interface UiState {
   settingsIndex: number;
   settingsOpenedTheme: string;
   settingsError?: string;
+  copyStatus?: string;
+  commandQuery: string;
+  commandError?: string;
 }
 
 export function createUiState(
@@ -34,6 +37,7 @@ export function createUiState(
     visibleRowCount,
     settingsIndex: 0,
     settingsOpenedTheme: themeName,
+    commandQuery: '',
   };
 }
 

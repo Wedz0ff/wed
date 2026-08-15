@@ -30,7 +30,8 @@ describe('mapKeyToAction', () => {
     expect(mapKeyToAction('p', key(), 'normal')).toEqual({
       type: 'toggleFollow',
     });
-    expect(mapKeyToAction('c', key(), 'normal')).toEqual({ type: 'clear' });
+    expect(mapKeyToAction('c', key(), 'normal')).toEqual({ type: 'copy' });
+    expect(mapKeyToAction('x', key(), 'normal')).toEqual({ type: 'clear' });
     expect(mapKeyToAction('f', key(), 'normal')).toEqual({
       type: 'openFilter',
     });
@@ -38,9 +39,10 @@ describe('mapKeyToAction', () => {
       type: 'openSearch',
     });
     expect(mapKeyToAction('r', key(), 'normal')).toEqual({ type: 'restart' });
-    expect(mapKeyToAction('s', key(), 'normal')).toEqual({
-      type: 'openSettings',
+    expect(mapKeyToAction('!', key(), 'normal')).toEqual({
+      type: 'openCommand',
     });
+    expect(mapKeyToAction('s', key(), 'normal')).toBeNull();
     expect(mapKeyToAction('', key({ return: true }), 'normal')).toEqual({
       type: 'inspect',
     });
@@ -90,10 +92,23 @@ describe('mapKeyToAction', () => {
     });
   });
 
-  it('maps settings-mode keys', () => {
-    expect(mapKeyToAction('s', key(), 'normal')).toEqual({
-      type: 'openSettings',
+  it('maps command-mode keys', () => {
+    expect(mapKeyToAction('s', key(), 'command')).toEqual({
+      type: 'input',
+      text: 's',
     });
+    expect(mapKeyToAction('', key({ backspace: true }), 'command')).toEqual({
+      type: 'backspace',
+    });
+    expect(mapKeyToAction('', key({ return: true }), 'command')).toEqual({
+      type: 'submitCommand',
+    });
+    expect(mapKeyToAction('', key({ escape: true }), 'command')).toEqual({
+      type: 'escape',
+    });
+  });
+
+  it('maps settings-mode keys', () => {
     expect(mapKeyToAction('', key({ upArrow: true }), 'settings')).toEqual({
       type: 'scroll',
       delta: -1,

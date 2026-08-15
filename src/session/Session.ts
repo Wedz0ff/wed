@@ -1,4 +1,5 @@
 import type { Action } from '../app/commands';
+import { runCommand } from '../app/slashCommands';
 import { createUiState, type DisplayStatus, type UiState } from '../app/state';
 import { LineAssembler } from '../logs/LineAssembler';
 import { filterLogs, findMatchIndexes } from '../logs/LogFilter';
@@ -7,6 +8,10 @@ import { extractStack, type ExtractedStack } from '../logs/StackTrace';
 import type { LogEntry } from '../logs/types';
 import { ProcessManager } from '../process/ProcessManager';
 import type { ProcessStatus } from '../process/types';
+import {
+  copyText as defaultCopyText,
+  formatLogsForClipboard,
+} from '../clipboard/copyText';
 import { saveConfig } from '../config/save';
 import { getTheme, listThemes, type Theme } from '../themes/index';
 
@@ -18,6 +23,7 @@ export interface SessionOptions {
   args: string[];
   themeName?: string;
   configPath?: string;
+  copyText?: (text: string) => Promise<void>;
   cols?: number;
   rows?: number;
   cwd?: string;
@@ -57,6 +63,7 @@ export class Session {
   private readonly args: string[];
   private readonly cwd: string;
   private readonly configPath: string | undefined;
+  private readonly copyText: (text: string) => Promise<void>;
   private cols: number;
   private rows: number;
   private ctrlCCount = 0;
@@ -72,6 +79,7 @@ export class Session {
     this.args = options.args;
     this.cwd = options.cwd ?? process.cwd();
     this.configPath = options.configPath;
+    this.copyText = options.copyText ?? defaultCopyText;
     this.cols = options.cols ?? process.stdout.columns ?? 80;
     this.rows = options.rows ?? process.stdout.rows ?? 24;
     this.logs = new LogStore(options.logCapacity);
@@ -118,6 +126,9 @@ export class Session {
   }
 
   dispatch(action: Action): void {
+    if (action.type !== 'copy') {
+      this.ui.copyStatus = undefined;
+    }
     switch (action.type) {
       case 'quit':
         void this.requestExit();
@@ -134,6 +145,9 @@ export class Session {
         this.ui.selectedIndex = 0;
         this.ui.scrollOffset = 0;
         break;
+      case 'copy':
+        void this.copyFiltered();
+        break;
       case 'openFilter':
         this.ui.mode = 'filter';
         break;
@@ -145,6 +159,14 @@ export class Session {
       case 'openSettings':
         this.openSettings();
         break;
+      case 'openCommand':
+        this.ui.mode = 'command';
+        this.ui.commandQuery = '';
+        this.ui.commandError = undefined;
+        break;
+      case 'submitCommand':
+        this.submitCommand();
+        break;
       case 'confirmSettings':
         this.confirmSettings();
         break;
@@ -152,6 +174,10 @@ export class Session {
         if (this.ui.mode === 'settings') {
           this.ui.themeName = this.ui.settingsOpenedTheme;
           this.ui.settingsError = undefined;
+        }
+        if (this.ui.mode === 'command') {
+          this.ui.commandQuery = '';
+          this.ui.commandError = undefined;
         }
         this.ui.mode = 'normal';
         break;
@@ -339,6 +365,10 @@ export class Session {
       this.ui.searchIndex = 0;
       this.jumpToSearch(0);
     }
+    if (this.ui.mode === 'command') {
+      this.ui.commandQuery += text;
+      this.ui.commandError = undefined;
+    }
   }
 
   private deleteQueryChar(): void {
@@ -350,6 +380,10 @@ export class Session {
       this.ui.searchQuery = this.ui.searchQuery.slice(0, -1);
       this.ui.searchIndex = 0;
       this.jumpToSearch(0);
+    }
+    if (this.ui.mode === 'command') {
+      this.ui.commandQuery = this.ui.commandQuery.slice(0, -1);
+      this.ui.commandError = undefined;
     }
   }
 
@@ -368,6 +402,35 @@ export class Session {
     this.ui.follow = false;
     this.ui.selectedIndex = target;
     this.ensureVisible();
+  }
+
+  private async copyFiltered(): Promise<void> {
+    const entries = this.filtered();
+    try {
+      await this.copyText(formatLogsForClipboard(entries));
+      this.ui.copyStatus = `copied ${entries.length} lines`;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.ui.copyStatus = `copy failed: ${message}`;
+    }
+    this.notifySoon();
+  }
+
+  private submitCommand(): void {
+    const result = runCommand(this.ui.commandQuery);
+    if (result.type === 'cancel') {
+      this.ui.mode = 'normal';
+      this.ui.commandQuery = '';
+      this.ui.commandError = undefined;
+      return;
+    }
+    if (result.type === 'error') {
+      this.ui.commandError = result.message;
+      return;
+    }
+    this.ui.commandQuery = '';
+    this.ui.commandError = undefined;
+    this.openSettings();
   }
 
   private openSettings(): void {

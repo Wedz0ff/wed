@@ -1,5 +1,6 @@
 import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import { useState } from 'react';
+import { APP_NAME, formatAppVersion } from './version';
 import { saveConfig } from '../config/save';
 import { SettingsPanel } from '../components/SettingsPanel';
 import { getTheme, listThemes } from '../themes/index';
@@ -50,8 +51,11 @@ export function SettingsApp({ initialTheme }: SettingsAppProps) {
       height={stdout.rows || 24}
     >
       <Box borderStyle="single" borderColor={theme.primary} paddingX={1}>
-        <Text color={theme.primary} bold>
-          mayu settings
+        <Text>
+          <Text color={theme.primary} bold>
+            {APP_NAME} settings
+          </Text>
+          <Text color={theme.muted}> {formatAppVersion()}</Text>
         </Text>
       </Box>
       <SettingsPanel

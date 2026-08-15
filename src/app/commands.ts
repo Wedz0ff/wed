@@ -1,6 +1,12 @@
 import type { LogLevel } from '../logs/types';
 
-export type UiMode = 'normal' | 'filter' | 'search' | 'inspect' | 'settings';
+export type UiMode =
+  | 'normal'
+  | 'filter'
+  | 'search'
+  | 'inspect'
+  | 'settings'
+  | 'command';
 
 export interface KeyLike {
   upArrow: boolean;
@@ -22,6 +28,7 @@ export type Action =
   | { type: 'ctrlC' }
   | { type: 'toggleFollow' }
   | { type: 'clear' }
+  | { type: 'copy' }
   | { type: 'openFilter' }
   | { type: 'openSearch' }
   | { type: 'escape' }
@@ -37,7 +44,9 @@ export type Action =
   | { type: 'searchNext' }
   | { type: 'searchPrev' }
   | { type: 'openSettings' }
-  | { type: 'confirmSettings' };
+  | { type: 'confirmSettings' }
+  | { type: 'openCommand' }
+  | { type: 'submitCommand' };
 
 const LEVEL_KEYS: Record<string, LogLevel | 'all'> = {
   '1': 'all',
@@ -56,7 +65,7 @@ export function mapKeyToAction(
     return { type: 'ctrlC' };
   }
 
-  if (mode === 'filter' || mode === 'search') {
+  if (mode === 'filter' || mode === 'search' || mode === 'command') {
     if (key.escape) return { type: 'escape' };
     if (key.backspace || key.delete) return { type: 'backspace' };
     if (mode === 'search' && input === 'n' && !key.shift) {
@@ -65,7 +74,11 @@ export function mapKeyToAction(
     if (mode === 'search' && (input === 'N' || (input === 'n' && key.shift))) {
       return { type: 'searchPrev' };
     }
-    if (key.return) return { type: 'escape' };
+    if (key.return) {
+      return mode === 'command'
+        ? { type: 'submitCommand' }
+        : { type: 'escape' };
+    }
     if (input && !key.ctrl) return { type: 'input', text: input };
     return null;
   }
@@ -96,11 +109,12 @@ export function mapKeyToAction(
 
   if (input === 'q') return { type: 'quit' };
   if (input === 'p') return { type: 'toggleFollow' };
-  if (input === 'c') return { type: 'clear' };
+  if (input === 'c') return { type: 'copy' };
+  if (input === 'x') return { type: 'clear' };
   if (input === 'f') return { type: 'openFilter' };
   if (input === '/') return { type: 'openSearch' };
   if (input === 'r') return { type: 'restart' };
-  if (input === 's') return { type: 'openSettings' };
+  if (input === '!') return { type: 'openCommand' };
 
   const level = LEVEL_KEYS[input];
   if (level) return { type: 'setLevel', level };

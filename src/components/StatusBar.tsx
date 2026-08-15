@@ -7,6 +7,7 @@ interface StatusBarProps {
   errorCount: number;
   searchMatches: number;
   mode: string;
+  copyStatus?: string;
   theme: Theme;
 }
 
@@ -16,6 +17,7 @@ export function StatusBar({
   errorCount,
   searchMatches,
   mode,
+  copyStatus,
   theme,
 }: StatusBarProps) {
   return (
@@ -33,11 +35,15 @@ export function StatusBar({
         ) : null}
       </Text>
       <Text color={theme.muted}>
-        {mode === 'search'
-          ? 'n/N next  Esc exit'
-          : mode === 'settings'
-            ? '↑↓ preview  Enter save  Esc cancel'
-            : '↑↓ scroll  / search  s settings  p pause  q quit'}
+        {copyStatus
+          ? copyStatus
+          : mode === 'search'
+            ? 'n/N next  Esc exit'
+            : mode === 'command'
+              ? 'Enter run  Esc cancel'
+              : mode === 'settings'
+                ? '↑↓ preview  Enter save  Esc cancel'
+                : '↑↓ scroll  / search  ! command  c copy  p pause  q quit'}
       </Text>
     </Box>
   );

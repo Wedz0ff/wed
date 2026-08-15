@@ -1,5 +1,6 @@
 import { Box, Text } from 'ink';
 import { formatUptime, type DisplayStatus } from '../app/state';
+import { APP_NAME, formatAppVersion } from '../app/version';
 import type { Theme } from '../themes/types';
 
 const MASCOT: Record<string, string> = {
@@ -50,8 +51,11 @@ export function Header({
       paddingX={1}
     >
       <Box justifyContent="space-between">
-        <Text color={theme.primary} bold>
-          mayu
+        <Text>
+          <Text color={theme.primary} bold>
+            {APP_NAME}
+          </Text>
+          <Text color={theme.muted}> {formatAppVersion()}</Text>
         </Text>
         <Text>
           <Text color={theme.muted}>{mascot} </Text>

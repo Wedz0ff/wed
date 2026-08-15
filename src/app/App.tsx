@@ -110,6 +110,7 @@ export function App({ session }: AppProps) {
         errorCount={snap.errorCount}
         searchMatches={snap.searchMatches}
         mode={snap.ui.mode}
+        copyStatus={snap.ui.copyStatus}
         theme={snap.theme}
       />
       {snap.status === 'exited' || snap.status === 'failed' ? (

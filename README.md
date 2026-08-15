@@ -32,13 +32,14 @@ Current version: v18.20.8
 | `q`                                | Quit and terminate the child                                    |
 | `Ctrl+C`                           | First press terminates the child; second press force-exits Mayu |
 | `p`                                | Pause / resume live log following                               |
-| `c`                                | Clear logs                                                      |
+| `c`                                | Copy filtered logs to the clipboard                             |
+| `x`                                | Clear logs                                                      |
 | `f`                                | Filter text                                                     |
 | `/`                                | Search (`n` / `N` next / previous)                              |
 | `↑` `↓` `PgUp` `PgDn` `Home` `End` | Scroll                                                          |
 | `1`–`5`                            | Level ALL / DEBUG / INFO / WARN / ERROR                         |
 | `r`                                | Restart the process                                             |
-| `s`                                | Open settings (theme picker)                                    |
+| `!` then `settings` + Enter        | Open settings (theme picker)                                    |
 | `Enter`                            | Inspect the selected error                                      |
 | `Esc`                              | Close filter, search, inspector, or settings                    |
 
@@ -48,7 +49,7 @@ The TUI owns the keyboard. Child stdin is not forwarded.
 
 `cyberpunk` (default), `sakura`, `monochrome`, `gameboy`.
 
-Press `s` while Mayu is running, or run `mayu settings`, to pick a theme. Enter saves it to `~/.config/mayu/config.json` (or `$XDG_CONFIG_HOME/mayu/config.json`). Esc cancels and restores the previous theme.
+Press `!`, type `settings`, and press Enter while Mayu is running, or run `mayu settings`, to pick a theme. Enter saves it to `~/.config/mayu/config.json` (or `$XDG_CONFIG_HOME/mayu/config.json`). Esc cancels and restores the previous theme.
 
 `--theme` overrides the saved theme for that run only.
 

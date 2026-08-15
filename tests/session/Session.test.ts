@@ -92,6 +92,42 @@ describe('Session', () => {
     expect(ticks).toBe(1);
   });
 
+  it('opens settings from the !settings command', () => {
+    const session = new Session({ command: 'node', args: [] });
+    session.dispatch({ type: 'openCommand' });
+    expect(session.ui.mode).toBe('command');
+    session.dispatch({ type: 'input', text: 'set' });
+    session.dispatch({ type: 'input', text: 'tings' });
+    session.dispatch({ type: 'submitCommand' });
+    expect(session.ui.mode).toBe('settings');
+    expect(session.ui.commandQuery).toBe('');
+    expect(session.ui.commandError).toBeUndefined();
+  });
+
+  it('keeps the command prompt open on an unknown command', () => {
+    const session = new Session({ command: 'node', args: [] });
+    session.dispatch({ type: 'openCommand' });
+    session.dispatch({ type: 'input', text: 'theme' });
+    session.dispatch({ type: 'submitCommand' });
+    expect(session.ui.mode).toBe('command');
+    expect(session.ui.commandError).toBe('unknown command: theme');
+    session.dispatch({ type: 'input', text: 's' });
+    expect(session.ui.commandError).toBeUndefined();
+  });
+
+  it('cancels the command prompt on escape or empty submit', () => {
+    const session = new Session({ command: 'node', args: [] });
+    session.dispatch({ type: 'openCommand' });
+    session.dispatch({ type: 'input', text: 'set' });
+    session.dispatch({ type: 'escape' });
+    expect(session.ui.mode).toBe('normal');
+    expect(session.ui.commandQuery).toBe('');
+
+    session.dispatch({ type: 'openCommand' });
+    session.dispatch({ type: 'submitCommand' });
+    expect(session.ui.mode).toBe('normal');
+  });
+
   it('opens settings and live-previews the highlighted theme', () => {
     const session = new Session({
       command: 'node',
@@ -141,6 +177,63 @@ describe('Session', () => {
     expect(session.ui.themeName).toBe(chosen);
     expect(loadConfig(file)).toEqual({ theme: chosen });
     expect(readFileSync(file, 'utf8').endsWith('\n')).toBe(true);
+  });
+
+  it('copies the filtered view without changing follow or selection', async () => {
+    let captured = '';
+    const session = new Session({
+      command: 'node',
+      args: [],
+      copyText: async (text) => {
+        captured = text;
+      },
+    });
+    session.ingest(
+      'INFO postgres ready\nINFO redis ready\nERROR postgres down\n',
+    );
+    session.dispatch({ type: 'openFilter' });
+    session.dispatch({ type: 'input', text: 'postgres' });
+    session.dispatch({ type: 'escape' });
+    const selected = session.ui.selectedIndex;
+    const follow = session.ui.follow;
+    session.dispatch({ type: 'copy' });
+    await wait(20);
+    expect(captured).toBe('INFO postgres ready\nERROR postgres down\n');
+    expect(session.ui.copyStatus).toBe('copied 2 lines');
+    expect(session.ui.follow).toBe(follow);
+    expect(session.ui.selectedIndex).toBe(selected);
+  });
+
+  it('reports an empty copy and clears the status on the next action', async () => {
+    let captured: string | undefined;
+    const session = new Session({
+      command: 'node',
+      args: [],
+      copyText: async (text) => {
+        captured = text;
+      },
+    });
+    session.dispatch({ type: 'copy' });
+    await wait(20);
+    expect(captured).toBe('');
+    expect(session.ui.copyStatus).toBe('copied 0 lines');
+    session.dispatch({ type: 'toggleFollow' });
+    expect(session.ui.copyStatus).toBeUndefined();
+  });
+
+  it('surfaces a copy failure without crashing', async () => {
+    const session = new Session({
+      command: 'node',
+      args: [],
+      copyText: async () => {
+        throw new Error('no clipboard');
+      },
+    });
+    session.ingest('INFO hi\n');
+    session.dispatch({ type: 'copy' });
+    await wait(20);
+    expect(session.ui.copyStatus).toBe('copy failed: no clipboard');
+    expect(session.getSnapshot().totalCount).toBe(1);
   });
 
   it('stays in settings and surfaces an error when persist fails', () => {

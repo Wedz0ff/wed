@@ -11,6 +11,7 @@ export function FilterBar({ ui, theme }: FilterBarProps) {
   const level = ui.filterLevel === 'all' ? 'ALL' : ui.filterLevel.toUpperCase();
   const filterActive = ui.mode === 'filter';
   const searchActive = ui.mode === 'search';
+  const commandActive = ui.mode === 'command';
 
   return (
     <Box
@@ -29,6 +30,15 @@ export function FilterBar({ ui, theme }: FilterBarProps) {
             {'  /'}
             {ui.searchQuery}
           </Text>
+        ) : null}
+        {commandActive ? (
+          <Text color={theme.primary} inverse>
+            {'  !'}
+            {ui.commandQuery}
+          </Text>
+        ) : null}
+        {ui.commandError ? (
+          <Text color={theme.warning}> {ui.commandError}</Text>
         ) : null}
       </Text>
       <Text color={theme.secondary}>Level: {level}</Text>
