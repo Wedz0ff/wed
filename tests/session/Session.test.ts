@@ -203,6 +203,22 @@ describe('Session', () => {
     });
   });
 
+  it('moves between the web UI and theme columns', () => {
+    const session = new Session({
+      command: 'node',
+      args: [],
+      themeName: 'sakura',
+    });
+    session.dispatch({ type: 'openSettings' });
+    expect(session.ui.settingsIndex).toBeGreaterThan(0);
+    session.dispatch({ type: 'settingsColumn', direction: -1 });
+    expect(session.ui.settingsIndex).toBe(0);
+    expect(session.ui.themeName).toBe('sakura');
+    session.dispatch({ type: 'settingsColumn', direction: 1 });
+    expect(session.ui.settingsIndex).toBeGreaterThan(0);
+    expect(session.ui.themeName).toBe('sakura');
+  });
+
   it('copies the filtered view without changing follow or selection', async () => {
     let captured = '';
     const session = new Session({

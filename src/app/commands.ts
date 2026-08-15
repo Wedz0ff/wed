@@ -50,7 +50,8 @@ export type Action =
   | { type: 'openCommand' }
   | { type: 'submitCommand' }
   | { type: 'openWebUi' }
-  | { type: 'toggleWebUiSetting' };
+  | { type: 'toggleWebUiSetting' }
+  | { type: 'settingsColumn'; direction: -1 | 1 };
 
 const LEVEL_KEYS: Record<string, LogLevel | 'all'> = {
   '1': 'all',
@@ -99,8 +100,14 @@ export function mapKeyToAction(
     if (key.upArrow) return { type: 'scroll', delta: -1 };
     if (key.downArrow) return { type: 'scroll', delta: 1 };
     if (key.return) return { type: 'confirmSettings' };
-    if (input === ' ' || key.leftArrow || key.rightArrow) {
+    if (input === ' ') {
       return { type: 'toggleWebUiSetting' };
+    }
+    if (key.leftArrow) {
+      return { type: 'settingsColumn', direction: -1 };
+    }
+    if (key.rightArrow) {
+      return { type: 'settingsColumn', direction: 1 };
     }
     return null;
   }

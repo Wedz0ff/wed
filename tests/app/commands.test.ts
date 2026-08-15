@@ -130,15 +130,17 @@ describe('mapKeyToAction', () => {
     expect(mapKeyToAction('f', key(), 'settings')).toBeNull();
   });
 
-  it('toggles web UI setting with space and arrows', () => {
+  it('toggles web UI with space and moves columns with arrows', () => {
     expect(mapKeyToAction(' ', key(), 'settings')).toEqual({
       type: 'toggleWebUiSetting',
     });
     expect(mapKeyToAction('', key({ leftArrow: true }), 'settings')).toEqual({
-      type: 'toggleWebUiSetting',
+      type: 'settingsColumn',
+      direction: -1,
     });
     expect(mapKeyToAction('', key({ rightArrow: true }), 'settings')).toEqual({
-      type: 'toggleWebUiSetting',
+      type: 'settingsColumn',
+      direction: 1,
     });
   });
 });

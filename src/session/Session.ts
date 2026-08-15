@@ -236,6 +236,9 @@ export class Session {
       case 'toggleWebUiSetting':
         this.toggleWebUiSetting();
         break;
+      case 'settingsColumn':
+        this.moveSettingsColumn(action.direction);
+        break;
       case 'confirmSettings':
         this.confirmSettings();
         break;
@@ -567,6 +570,21 @@ export class Session {
   private toggleWebUiSetting(): void {
     if (this.ui.mode === 'settings' && this.ui.settingsIndex === 0) {
       this.ui.settingsWebUi = !this.ui.settingsWebUi;
+    }
+  }
+
+  private moveSettingsColumn(direction: -1 | 1): void {
+    if (this.ui.mode !== 'settings') {
+      return;
+    }
+    const themes = listThemes();
+    if (direction < 0) {
+      this.ui.settingsIndex = 0;
+      return;
+    }
+    if (this.ui.settingsIndex === 0) {
+      const index = themes.indexOf(this.ui.themeName);
+      this.ui.settingsIndex = (index >= 0 ? index : 0) + 1;
     }
   }
 

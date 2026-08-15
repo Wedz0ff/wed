@@ -1,5 +1,6 @@
 import { Box, Text } from 'ink';
 import type { Theme } from '../themes/types';
+import { settingsColumns } from './settingsLayout';
 
 interface SettingsPanelProps {
   themes: string[];
@@ -9,6 +10,50 @@ interface SettingsPanelProps {
   error?: string;
 }
 
+function Column({
+  title,
+  items,
+  selectedIndex,
+  indexOffset,
+  active,
+  theme,
+}: {
+  title: string;
+  items: string[];
+  selectedIndex: number;
+  indexOffset: number;
+  active: boolean;
+  theme: Theme;
+}) {
+  return (
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor={active ? theme.primary : theme.muted}
+      paddingX={1}
+      flexGrow={1}
+    >
+      <Text color={theme.primary} bold>
+        {title}
+      </Text>
+      {items.map((label, offset) => {
+        const index = indexOffset + offset;
+        const selected = index === selectedIndex;
+        return (
+          <Text
+            key={label}
+            color={selected ? theme.primary : theme.foreground}
+            inverse={selected}
+          >
+            {selected ? '> ' : '  '}
+            {label}
+          </Text>
+        );
+      })}
+    </Box>
+  );
+}
+
 export function SettingsPanel({
   themes,
   selectedIndex,
@@ -16,43 +61,33 @@ export function SettingsPanel({
   webUi,
   error,
 }: SettingsPanelProps) {
+  const columns = settingsColumns(themes, webUi);
   const webSelected = selectedIndex === 0;
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="double"
-      borderColor={theme.primary}
-      paddingX={1}
-      flexGrow={1}
-    >
-      <Text color={theme.primary} bold>
-        THEME
-      </Text>
-      <Text
-        color={webSelected ? theme.primary : theme.foreground}
-        inverse={webSelected}
-      >
-        {webSelected ? '> ' : '  '}
-        Web UI    {webUi ? 'ON' : 'OFF'}
-      </Text>
-      {themes.map((name, index) => {
-        const selected = index + 1 === selectedIndex;
-        return (
-          <Text
-            key={name}
-            color={selected ? theme.primary : theme.foreground}
-            inverse={selected}
-          >
-            {selected ? '> ' : '  '}
-            {name}
-          </Text>
-        );
-      })}
+    <Box flexDirection="column" flexGrow={1}>
+      <Box flexDirection="row" flexGrow={1}>
+        <Column
+          title={columns.left.title}
+          items={columns.left.items}
+          selectedIndex={selectedIndex}
+          indexOffset={0}
+          active={webSelected}
+          theme={theme}
+        />
+        <Column
+          title={columns.right.title}
+          items={columns.right.items}
+          selectedIndex={selectedIndex}
+          indexOffset={1}
+          active={!webSelected}
+          theme={theme}
+        />
+      </Box>
       {error ? (
         <Text color={theme.warning}>Could not save: {error}</Text>
       ) : (
         <Text color={theme.muted}>
-          Enter saves to ~/.config/wed/config.json
+          ←→ section  Space toggle  Enter saves to ~/.config/wed/config.json
         </Text>
       )}
     </Box>

@@ -46,10 +46,23 @@ export function SettingsApp({ initialTheme }: SettingsAppProps) {
       setError(undefined);
       return;
     }
-    if (input === ' ' || key.leftArrow || key.rightArrow) {
+    if (input === ' ') {
       if (selectedIndex === 0) {
         setWebUi((value) => !value);
       }
+      return;
+    }
+    if (key.leftArrow) {
+      setSelectedIndex(0);
+      setError(undefined);
+      return;
+    }
+    if (key.rightArrow) {
+      if (selectedIndex === 0) {
+        const index = themes.indexOf(themeName);
+        setSelectedIndex((index >= 0 ? index : 0) + 1);
+      }
+      setError(undefined);
       return;
     }
     if (key.return) {
@@ -84,7 +97,9 @@ export function SettingsApp({ initialTheme }: SettingsAppProps) {
         error={error}
       />
       <Box paddingX={1}>
-        <Text color={theme.muted}>↑↓ preview Enter save Esc quit</Text>
+        <Text color={theme.muted}>
+          ←→ section  Space toggle  Enter save  Esc quit
+        </Text>
       </Box>
     </Box>
   );

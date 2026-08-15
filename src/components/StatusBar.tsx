@@ -49,7 +49,7 @@ export function StatusBar({
               : mode === 'command'
                 ? 'Enter run  Esc cancel'
                 : mode === 'settings'
-                  ? '↑↓ preview  Enter save  Esc cancel'
+                  ? '←→ section  Space web  Enter save  Esc cancel'
                   : '↑↓ scroll  / search  ! command  c copy  p pause  q quit  w web'}
       </Text>
     </Box>
