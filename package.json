@@ -1,0 +1,61 @@
+{
+  "name": "mayu-cli",
+  "version": "0.1.0",
+  "description": "Terminal-first process runner and log inspector TUI",
+  "type": "module",
+  "bin": {
+    "mayu": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "scripts"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "postinstall": "node scripts/ensure-pty-helper.js"
+  },
+  "keywords": [
+    "cli",
+    "tui",
+    "pty",
+    "logs",
+    "developer-tools"
+  ],
+  "license": "MIT",
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "packageManager": "pnpm@11.6.0",
+  "dependencies": {
+    "ink": "^7.1.1",
+    "node-pty": "^1.1.0",
+    "react": "^19.2.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "prettier": "^3.9.6",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.67.0",
+    "vitest": "^4.1.10"
+  }
+}
