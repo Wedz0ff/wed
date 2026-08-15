@@ -1,10 +1,10 @@
 import { listThemes } from '../themes/index';
-import type { MayuConfig } from './types';
+import type { WedConfig } from './types';
 
 export function resolveTheme(options: {
   theme: string;
   themeExplicit: boolean;
-  config: MayuConfig;
+  config: WedConfig;
 }): string {
   if (options.themeExplicit) {
     return options.theme;

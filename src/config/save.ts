@@ -2,10 +2,10 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { loadRawConfig } from './load';
 import { configPath } from './paths';
-import type { MayuConfig } from './types';
+import type { WedConfig } from './types';
 
 export function saveConfig(
-  update: MayuConfig,
+  update: WedConfig,
   filePath: string = configPath(),
 ): void {
   const existing = loadRawConfig(filePath);

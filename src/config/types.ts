@@ -1,3 +1,3 @@
-export interface MayuConfig {
+export interface WedConfig {
   theme?: string;
 }

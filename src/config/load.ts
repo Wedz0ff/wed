@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { configPath } from './paths';
-import type { MayuConfig } from './types';
+import type { WedConfig } from './types';
 
 export function loadRawConfig(
   filePath: string = configPath(),
@@ -17,7 +17,7 @@ export function loadRawConfig(
   }
 }
 
-export function loadConfig(filePath: string = configPath()): MayuConfig {
+export function loadConfig(filePath: string = configPath()): WedConfig {
   const raw = loadRawConfig(filePath);
   return typeof raw.theme === 'string' ? { theme: raw.theme } : {};
 }
