@@ -48,10 +48,11 @@ async function main(): Promise<void> {
     return;
   }
 
+  const config = loadConfig();
   const themeName = resolveTheme({
     theme: parsed.theme,
     themeExplicit: parsed.themeExplicit,
-    config: loadConfig(),
+    config,
   });
 
   if (parsed.settings) {
@@ -66,6 +67,7 @@ async function main(): Promise<void> {
     command: parsed.command,
     args: parsed.args,
     themeName,
+    webUi: config.webUi,
     cols: process.stdout.columns ?? 80,
     rows: process.stdout.rows ?? 24,
   });

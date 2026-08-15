@@ -46,7 +46,8 @@ export type Action =
   | { type: 'openSettings' }
   | { type: 'confirmSettings' }
   | { type: 'openCommand' }
-  | { type: 'submitCommand' };
+  | { type: 'submitCommand' }
+  | { type: 'openWebUi' };
 
 const LEVEL_KEYS: Record<string, LogLevel | 'all'> = {
   '1': 'all',

@@ -12,8 +12,12 @@ import {
   copyText as defaultCopyText,
   formatLogsForClipboard,
 } from '../clipboard/copyText';
+import { isWebUiEnabled } from '../config/load';
 import { saveConfig } from '../config/save';
 import { getTheme, listThemes, type Theme } from '../themes/index';
+import { openBrowser } from '../web/openBrowser';
+import { startWebServer, toWebLog, type WebServer } from '../web/server';
+import type { WebLogDto, WebSnapshot } from '../web/types';
 
 const BATCH_MS = 50;
 const CHROME_ROWS = 9;
@@ -28,6 +32,8 @@ export interface SessionOptions {
   rows?: number;
   cwd?: string;
   logCapacity?: number;
+  webUi?: boolean;
+  openBrowser?: (url: string) => Promise<void>;
 }
 
 export interface Snapshot {
@@ -49,6 +55,8 @@ export interface Snapshot {
   exitRequested: boolean;
   forceExit: boolean;
   inspector: ExtractedStack | undefined;
+  webUrl: string | undefined;
+  webError: string | undefined;
 }
 
 export class Session {
@@ -58,12 +66,19 @@ export class Session {
   ui: UiState;
   exitRequested = false;
   forceExit = false;
+  webUrl: string | undefined;
+  webError: string | undefined;
 
   private readonly command: string;
   private readonly args: string[];
   private readonly cwd: string;
   private readonly configPath: string | undefined;
   private readonly copyText: (text: string) => Promise<void>;
+  private readonly webUiPref: boolean | undefined;
+  private readonly openBrowserFn:
+    | ((url: string) => Promise<void>)
+    | undefined;
+  private webServer: WebServer | undefined;
   private cols: number;
   private rows: number;
   private ctrlCCount = 0;
@@ -80,6 +95,8 @@ export class Session {
     this.cwd = options.cwd ?? process.cwd();
     this.configPath = options.configPath;
     this.copyText = options.copyText ?? defaultCopyText;
+    this.webUiPref = options.webUi;
+    this.openBrowserFn = options.openBrowser;
     this.cols = options.cols ?? process.stdout.columns ?? 80;
     this.rows = options.rows ?? process.stdout.rows ?? 24;
     this.logs = new LogStore(options.logCapacity);
@@ -105,6 +122,52 @@ export class Session {
       cols: this.cols,
       rows: this.rows,
     });
+    if (isWebUiEnabled({ webUi: this.webUiPref })) {
+      void this.ensureWebServer().then(() => this.notifySoon());
+    }
+  }
+
+  async ensureWebServer(): Promise<void> {
+    if (this.webServer) {
+      return;
+    }
+    try {
+      this.webServer = await startWebServer(this);
+      this.webUrl = this.webServer.url;
+      this.webError = undefined;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.webError = `web ui failed: ${message}`;
+    }
+  }
+
+  async openWebUi(): Promise<void> {
+    await this.ensureWebServer();
+    if (!this.webUrl) {
+      return;
+    }
+    try {
+      await (this.openBrowserFn ?? openBrowser)(this.webUrl);
+    } catch {
+      this.webError = `web ui: ${this.webUrl}`;
+    }
+  }
+
+  getWebSnapshot(): WebSnapshot {
+    return {
+      command: this.command,
+      args: this.args,
+      status: this.displayStatus(),
+      theme: getTheme(this.ui.themeName),
+      logs: this.logs.toArray().map(toWebLog),
+    };
+  }
+
+  logsSince(afterId: number): WebLogDto[] {
+    return this.logs
+      .toArray()
+      .filter((e) => e.id > afterId)
+      .map(toWebLog);
   }
 
   ingest(data: string): void {
@@ -166,6 +229,9 @@ export class Session {
         break;
       case 'submitCommand':
         this.submitCommand();
+        break;
+      case 'openWebUi':
+        void this.openWebUi();
         break;
       case 'confirmSettings':
         this.confirmSettings();
@@ -273,6 +339,8 @@ export class Session {
         this.ui.mode === 'inspect'
           ? extractStack(filtered, this.ui.selectedIndex)
           : undefined,
+      webUrl: this.webUrl,
+      webError: this.webError,
     };
   }
 
@@ -284,6 +352,9 @@ export class Session {
       this.logs.appendRaw(leftover);
     }
     await this.process.terminate();
+    await this.webServer?.close();
+    this.webServer = undefined;
+    this.webUrl = undefined;
     this.notifyNow();
   }
 
