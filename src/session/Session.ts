@@ -1,0 +1,443 @@
+import type { Action } from '../app/commands';
+import {
+  createUiState,
+  type DisplayStatus,
+  type UiState,
+} from '../app/state';
+import { LineAssembler } from '../logs/LineAssembler';
+import { filterLogs, findMatchIndexes } from '../logs/LogFilter';
+import { LogStore } from '../logs/LogStore';
+import { extractStack, type ExtractedStack } from '../logs/StackTrace';
+import type { LogEntry } from '../logs/types';
+import { ProcessManager } from '../process/ProcessManager';
+import type { ProcessStatus } from '../process/types';
+import { getTheme, type Theme } from '../themes/index';
+
+const BATCH_MS = 50;
+const CHROME_ROWS = 9;
+
+export interface SessionOptions {
+  command: string;
+  args: string[];
+  themeName?: string;
+  cols?: number;
+  rows?: number;
+  cwd?: string;
+  logCapacity?: number;
+}
+
+export interface Snapshot {
+  command: string;
+  args: string[];
+  pid?: number;
+  status: ProcessStatus;
+  displayStatus: DisplayStatus;
+  startedAt?: number;
+  exitCode?: number;
+  lastError?: string;
+  ui: UiState;
+  visibleLogs: LogEntry[];
+  filteredCount: number;
+  totalCount: number;
+  errorCount: number;
+  searchMatches: number;
+  theme: Theme;
+  exitRequested: boolean;
+  forceExit: boolean;
+  inspector: ExtractedStack | undefined;
+}
+
+export class Session {
+  readonly logs: LogStore;
+  readonly process = new ProcessManager();
+  readonly assembler = new LineAssembler();
+  ui: UiState;
+  exitRequested = false;
+  forceExit = false;
+
+  private readonly command: string;
+  private readonly args: string[];
+  private readonly cwd: string;
+  private cols: number;
+  private rows: number;
+  private ctrlCCount = 0;
+  private dirty = false;
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private readonly listeners = new Set<() => void>();
+  private readonly onSignal = () => {
+    void this.shutdown();
+  };
+
+  constructor(options: SessionOptions) {
+    this.command = options.command;
+    this.args = options.args;
+    this.cwd = options.cwd ?? process.cwd();
+    this.cols = options.cols ?? process.stdout.columns ?? 80;
+    this.rows = options.rows ?? process.stdout.rows ?? 24;
+    this.logs = new LogStore(options.logCapacity);
+    this.ui = createUiState(
+      options.themeName ?? 'cyberpunk',
+      Math.max(3, this.rows - CHROME_ROWS),
+    );
+
+    this.process.onData = (data) => {
+      this.ingest(data);
+    };
+    this.process.onStatus = () => {
+      this.notifySoon();
+    };
+  }
+
+  start(): void {
+    this.registerCleanup();
+    this.process.start({
+      command: this.command,
+      args: this.args,
+      cwd: this.cwd,
+      cols: this.cols,
+      rows: this.rows,
+    });
+  }
+
+  ingest(data: string): void {
+    const lines = this.assembler.push(data);
+    for (const line of lines) {
+      this.logs.appendRaw(line);
+    }
+    if (this.ui.follow) {
+      this.pinToEnd();
+    }
+    this.notifySoon();
+  }
+
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  dispatch(action: Action): void {
+    switch (action.type) {
+      case 'quit':
+        void this.requestExit();
+        break;
+      case 'ctrlC':
+        void this.handleCtrlC();
+        break;
+      case 'toggleFollow':
+        this.ui.follow = !this.ui.follow;
+        if (this.ui.follow) this.pinToEnd();
+        break;
+      case 'clear':
+        this.logs.clear();
+        this.ui.selectedIndex = 0;
+        this.ui.scrollOffset = 0;
+        break;
+      case 'openFilter':
+        this.ui.mode = 'filter';
+        break;
+      case 'openSearch':
+        this.ui.mode = 'search';
+        this.ui.searchIndex = 0;
+        this.jumpToSearch(0);
+        break;
+      case 'escape':
+        this.ui.mode = 'normal';
+        break;
+      case 'scroll':
+        this.ui.follow = false;
+        this.moveSelection(action.delta);
+        break;
+      case 'page':
+        this.ui.follow = false;
+        this.moveSelection(action.direction * this.ui.visibleRowCount);
+        break;
+      case 'home':
+        this.ui.follow = false;
+        this.ui.selectedIndex = 0;
+        this.ui.scrollOffset = 0;
+        break;
+      case 'end':
+        this.ui.follow = true;
+        this.pinToEnd();
+        break;
+      case 'setLevel':
+        this.ui.filterLevel = action.level;
+        this.clampSelection();
+        break;
+      case 'restart':
+        void this.restart();
+        break;
+      case 'inspect':
+        this.openInspector();
+        break;
+      case 'input':
+        this.appendQuery(action.text);
+        break;
+      case 'backspace':
+        this.deleteQueryChar();
+        break;
+      case 'searchNext':
+        this.jumpToSearch(1);
+        break;
+      case 'searchPrev':
+        this.jumpToSearch(-1);
+        break;
+    }
+    this.notifySoon();
+  }
+
+  resize(cols: number, rows: number): void {
+    this.cols = cols;
+    this.rows = rows;
+    this.ui.visibleRowCount = Math.max(3, rows - CHROME_ROWS);
+    this.process.resize(cols, rows);
+    this.clampSelection();
+    this.notifySoon();
+  }
+
+  getSnapshot(): Snapshot {
+    const filtered = this.filtered();
+    const matches = findMatchIndexes(filtered, this.ui.searchQuery);
+    const offset = this.ui.follow
+      ? Math.max(0, filtered.length - this.ui.visibleRowCount)
+      : this.ui.scrollOffset;
+    const visibleLogs = filtered.slice(
+      offset,
+      offset + this.ui.visibleRowCount,
+    );
+    const errorCount = this.logs
+      .toArray()
+      .reduce((count, entry) => count + (entry.level === 'error' ? 1 : 0), 0);
+
+    return {
+      command: this.command,
+      args: this.args,
+      pid: this.process.pid,
+      status: this.process.status,
+      displayStatus: this.displayStatus(),
+      startedAt: this.process.startedAt,
+      exitCode: this.process.exitCode,
+      lastError: this.process.lastError,
+      ui: { ...this.ui, scrollOffset: offset },
+      visibleLogs,
+      filteredCount: filtered.length,
+      totalCount: this.logs.length,
+      errorCount,
+      searchMatches: matches.length,
+      theme: getTheme(this.ui.themeName),
+      exitRequested: this.exitRequested,
+      forceExit: this.forceExit,
+      inspector:
+        this.ui.mode === 'inspect'
+          ? extractStack(filtered, this.ui.selectedIndex)
+          : undefined,
+    };
+  }
+
+  async shutdown(): Promise<void> {
+    this.unregisterCleanup();
+    this.flushPending();
+    const leftover = this.assembler.flush();
+    if (leftover) {
+      this.logs.appendRaw(leftover);
+    }
+    await this.process.terminate();
+    this.notifyNow();
+  }
+
+  private async restart(): Promise<void> {
+    await this.process.restart();
+    this.logs.appendSynthetic('── process restarted ──');
+    this.ctrlCCount = 0;
+    this.notifySoon();
+  }
+
+  private async handleCtrlC(): Promise<void> {
+    this.ctrlCCount += 1;
+    if (this.ctrlCCount === 1) {
+      await this.process.terminate('SIGTERM');
+      return;
+    }
+    this.forceExit = true;
+    this.exitRequested = true;
+    await this.process.terminate('SIGKILL');
+    this.notifyNow();
+  }
+
+  private async requestExit(): Promise<void> {
+    this.exitRequested = true;
+    await this.shutdown();
+    this.notifyNow();
+  }
+
+  private filtered(): LogEntry[] {
+    return filterLogs(this.logs.toArray(), {
+      query: this.ui.filterQuery,
+      level: this.ui.filterLevel,
+    });
+  }
+
+  private pinToEnd(): void {
+    const count = this.filtered().length;
+    this.ui.selectedIndex = Math.max(0, count - 1);
+    this.ui.scrollOffset = Math.max(0, count - this.ui.visibleRowCount);
+  }
+
+  private moveSelection(delta: number): void {
+    const count = this.filtered().length;
+    this.ui.selectedIndex = clamp(
+      this.ui.selectedIndex + delta,
+      0,
+      Math.max(0, count - 1),
+    );
+    this.ensureVisible();
+  }
+
+  private clampSelection(): void {
+    const count = this.filtered().length;
+    this.ui.selectedIndex = clamp(
+      this.ui.selectedIndex,
+      0,
+      Math.max(0, count - 1),
+    );
+    this.ensureVisible();
+  }
+
+  private ensureVisible(): void {
+    const { selectedIndex, visibleRowCount } = this.ui;
+    if (selectedIndex < this.ui.scrollOffset) {
+      this.ui.scrollOffset = selectedIndex;
+    } else if (selectedIndex >= this.ui.scrollOffset + visibleRowCount) {
+      this.ui.scrollOffset = selectedIndex - visibleRowCount + 1;
+    }
+    this.ui.scrollOffset = Math.max(0, this.ui.scrollOffset);
+  }
+
+  private appendQuery(text: string): void {
+    if (this.ui.mode === 'filter') {
+      this.ui.filterQuery += text;
+      this.clampSelection();
+    }
+    if (this.ui.mode === 'search') {
+      this.ui.searchQuery += text;
+      this.ui.searchIndex = 0;
+      this.jumpToSearch(0);
+    }
+  }
+
+  private deleteQueryChar(): void {
+    if (this.ui.mode === 'filter') {
+      this.ui.filterQuery = this.ui.filterQuery.slice(0, -1);
+      this.clampSelection();
+    }
+    if (this.ui.mode === 'search') {
+      this.ui.searchQuery = this.ui.searchQuery.slice(0, -1);
+      this.ui.searchIndex = 0;
+      this.jumpToSearch(0);
+    }
+  }
+
+  private jumpToSearch(delta: number): void {
+    const matches = findMatchIndexes(this.filtered(), this.ui.searchQuery);
+    if (matches.length === 0) {
+      return;
+    }
+    const next =
+      (this.ui.searchIndex + delta + matches.length * 10) % matches.length;
+    this.ui.searchIndex = next;
+    const target = matches[next];
+    if (target === undefined) {
+      return;
+    }
+    this.ui.follow = false;
+    this.ui.selectedIndex = target;
+    this.ensureVisible();
+  }
+
+  private openInspector(): void {
+    const selected = this.filtered()[this.ui.selectedIndex];
+    if (!selected || selected.level !== 'error') {
+      return;
+    }
+    this.ui.mode = 'inspect';
+  }
+
+  private displayStatus(): DisplayStatus {
+    if (this.process.status === 'running' && !this.ui.follow) {
+      return 'PAUSED';
+    }
+    switch (this.process.status) {
+      case 'starting':
+        return 'STARTING';
+      case 'running':
+        return 'RUNNING';
+      case 'terminating':
+        return 'TERMINATING';
+      case 'failed':
+        return 'FAILED';
+      default:
+        return 'EXITED';
+    }
+  }
+
+  private registerCleanup(): void {
+    if (process.env.VITEST) {
+      return;
+    }
+    if (this.cleanupRegistered) {
+      return;
+    }
+    this.cleanupRegistered = true;
+    process.on('SIGINT', this.onSignal);
+    process.on('SIGTERM', this.onSignal);
+    process.on('beforeExit', this.onSignal);
+    process.on('uncaughtException', this.onSignal);
+  }
+
+  private cleanupRegistered = false;
+
+  private unregisterCleanup(): void {
+    if (!this.cleanupRegistered) {
+      return;
+    }
+    this.cleanupRegistered = false;
+    process.off('SIGINT', this.onSignal);
+    process.off('SIGTERM', this.onSignal);
+    process.off('beforeExit', this.onSignal);
+    process.off('uncaughtException', this.onSignal);
+  }
+
+  private notifySoon(): void {
+    this.dirty = true;
+    if (this.timer) {
+      return;
+    }
+    this.timer = setTimeout(() => {
+      this.timer = undefined;
+      this.notifyNow();
+    }, BATCH_MS);
+  }
+
+  private notifyNow(): void {
+    this.dirty = false;
+    for (const listener of this.listeners) {
+      listener();
+    }
+  }
+
+  private flushPending(): void {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
+    if (this.dirty) {
+      this.notifyNow();
+    }
+  }
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
